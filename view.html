@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand navbar-dark bg-dark">
+<nav class="navbar navbar-expand navbar-dark bg-dark" id="nav">
     <a class="navbar-brand" href="#">LR2IR Option Data</a>
     <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
         <li class="nav-item">
@@ -44,9 +44,10 @@
 
 <div class="container-fluid text-light">
     <h2>Table <span id="table_name">Loading...</span></h2>
-    Original URL: <a id="table_url">Loading...</a>
+    Original URL: <a id="table_url">Loading...</a><br>
+    <div class="container align-items-center text-center" id="buttons"></div>
 </div>
-<div class="container-fluid" id="tables">
+<div class="container-fluid mt-3" id="tables">
 </div>
 <div style="display: none;">
     <table class="table table-dark tablesorter" id="table_base">
@@ -78,14 +79,17 @@
             const urlParams = new URLSearchParams(window.location.search);
             const file = urlParams.get('file');
             let tables = [];
+            let symbol = '';
             function makeTable(i) {
                 let obj = $('#table_base').clone().attr('id', 'table_' + i).appendTo('#tables');
-                $(obj).children().eq(0).children().eq(0).children().eq(0).text(i);
+                $(obj).children().eq(0).children().eq(0).children().eq(0).text(symbol + i);
                 let body = $('<tbody>');
                 $(obj).append(body);
+                $('#buttons').append($('<a>').addClass('btn').addClass('btn-primary').addClass('ml-1').addClass('mt-1').attr('href', '#table_' + i).text(symbol + i));
                 tables[i.toString()] = body;
             }
             function makeTables(data) {
+                symbol = data['symbol'];
                 $('#table_name').text(data['name'] + ' (' + data['symbol'] + ')');
                 $('#table_url').text(data['table']).attr('href', data['table']).attr('target', '_blank');
                 $('#tables').empty();
@@ -94,7 +98,7 @@
                 } //we'll assume it's in order if not there :(
                 data['data'].forEach((i) => {
                     let row = $('<tr>');
-                    row.append($('<td>').text(i['title']));
+                    row.append($('<td>').append($('<a>').attr('href', i['link']).text(i['title'])));
                     row.append($('<td>').text(i['artist']));
                     let topOption = Object.keys(i['totals']).reduce((a, b) => {
                         if(a == 'all') return b;
