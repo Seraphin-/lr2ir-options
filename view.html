@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Table Options from LR2IR</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T">
+    <link rel="stylesheet" href="css/theme.bootstrap_4.css">
+    <style type="text/css">
+        body {
+            background-color: #343a40;
+        }
+        .tablesorter .filtered {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">LR2IR Option Data</a>
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/list">Full Index</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/view?file=insane1.json">Insane1</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/view?file=overjoy.json">Overjoy</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/view?file=satellite.json">Satellite</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/lr2ir/view?file=stella.json">Stella</a>
+        </li>
+    </ul>
+</nav>
+
+<div class="container-fluid text-light">
+    <h2>Table <span id="table_name">Loading...</span></h2>
+    Original URL: <a id="table_url">Loading...</a>
+</div>
+<div class="container-fluid" id="tables">
+</div>
+<div style="display: none;">
+    <table class="table table-dark tablesorter" id="table_base">
+        <thead>
+        <tr class="text-center">
+            <th class="sorter-false" scope="colgroup" colspan="4">Level</th>
+        </tr>
+        <tr>
+            <th scope="col" style="width: 40%">Name</th>
+            <th scope="col" style="width: 35%">Artist</th>
+            <th scope="col" style="width: 10%" class="filter-select">Top Option</th>
+            <th scope="col" style="width: 15%">Percentage of Top 100</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+</body>
+<footer>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            crossorigin="anonymous"></script>
+    <script src="js/jquery.tablesorter.js"></script>
+    <script src="js/jquery.tablesorter.widgets.js"></script>
+    <script type="text/javascript">
+        $(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const file = urlParams.get('file');
+            let tables = [];
+            function makeTable(i) {
+                let obj = $('#table_base').clone().attr('id', 'table_' + i).appendTo('#tables');
+                $(obj).children().eq(0).children().eq(0).children().eq(0).text(i);
+                let body = $('<tbody>');
+                $(obj).append(body);
+                tables[i.toString()] = body;
+            }
+            function makeTables(data) {
+                $('#table_name').text(data['name'] + ' (' + data['symbol'] + ')');
+                $('#table_url').text(data['table']).attr('href', data['table']).attr('target', '_blank');
+                $('#tables').empty();
+                if('level_order' in data['header']) {
+                    data['header']['level_order'].forEach(makeTable);
+                } //we'll assume it's in order if not there :(
+                data['data'].forEach((i) => {
+                    let row = $('<tr>');
+                    row.append($('<td>').text(i['title']));
+                    row.append($('<td>').text(i['artist']));
+                    let topOption = Object.keys(i['totals']).reduce((a, b) => {
+                        if(a == 'all') return b;
+                        if(b == 'all') return a;
+                        return i['totals'][a] > i['totals'][b] ? a : b;
+                    });
+                    row.append($('<td>').text(topOption));
+                    row.append($('<td>').text(Math.round(i['totals'][topOption] / i['totals']['all'] * 100).toString() + '%'));
+                    if(!(i['level'].toString() in tables)) makeTable(i['level'].toString());
+                    tables[i['level'].toString()].append(row);
+                });
+                $("table").tablesorter({
+                    'theme': 'boostrap',
+                    'sortList': [[0, 0]],
+                    'widthFixed': true,
+                    'widgets': ['filter', 'zebra'],
+                    'widgetOptions': {
+                        'zebra': ["even", "odd"],
+                        'filter_cssFilter': [
+                            'form-control',
+                            'form-control',
+                            'form-control custom-select',
+                            'form-control'
+                        ]
+                    }
+                });
+            }
+            $.getJSON('/lr2ir/data/' + file, makeTables);
+        });
+    </script>
+</footer>
+</html>
