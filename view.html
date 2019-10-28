@@ -43,7 +43,7 @@
 </nav>
 
 <div class="container-fluid text-light">
-    <h2>Table <span id="table_name">Loading...</span></h2>
+    <h2>Table <span id="table_name">Loading...</span> <a id="disablelink"><span class="btn btn-primary">Toggle Nonran/Mirror Merge</span></a></h2>
     Original URL: <a id="table_url">Loading...</a><br>
     <div class="container align-items-center text-center" id="buttons"></div>
 </div>
@@ -78,6 +78,7 @@
         $(() => {
             const urlParams = new URLSearchParams(window.location.search);
             const file = urlParams.get('file');
+            const collapseNonranMir = urlParams.get('collapse')
             let tables = [];
             let symbol = '';
             function makeTable(i) {
@@ -91,12 +92,18 @@
             function makeTables(data) {
                 symbol = data['symbol'];
                 $('#table_name').text(data['name'] + ' (' + data['symbol'] + ')');
+                $('#disablelink').attr('href', 'view?file=' + file + '&collapse=' + (collapseNonranMir == 'false' ? 'true' : 'false'))
                 $('#table_url').text(data['table']).attr('href', data['table']).attr('target', '_blank');
                 $('#tables').empty();
                 if('level_order' in data['header']) {
                     data['header']['level_order'].forEach(makeTable);
                 } //we'll assume it's in order if not there :(
                 data['data'].forEach((i) => {
+                    if(collapseNonranMir != 'false') {
+                        i['totals']['NONE'] = ('正' in i['totals'] ? i['totals']['正'] : 0) + ('鏡' in i['totals'] ? i['totals']['鏡'] : 0)
+                        if('正' in i['totals']) delete i['totals']['正']
+                        if('鏡' in i['totals']) delete i['totals']['鏡']
+                    }
                     let row = $('<tr>');
                     row.append($('<td>').append($('<a>').attr('href', i['link']).text(i['title'])));
                     row.append($('<td>').text(i['artist']));
